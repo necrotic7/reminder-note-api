@@ -26,7 +26,7 @@ func (h *LineWebhookHandler) WebhookHandler(c *gin.Context) {
 		}
 		return
 	}
-	err = h.svc.WebhookRoot(events)
+	err = h.svc.RootEventHandler(events)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}

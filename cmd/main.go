@@ -20,6 +20,9 @@ func main() {
 			services.NewLineWebhookService,
 			handlers.NewLineWebhookHandler,
 		),
+		fx.Provide(
+			handlers.NewReminderHandler,
+		),
 		fx.Invoke(StartServer),
 	)
 
