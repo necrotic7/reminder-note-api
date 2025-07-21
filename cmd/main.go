@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/zivwu/reminder-note-api/internal/config"
+	"github.com/zivwu/reminder-note-api/internal/db"
 	"github.com/zivwu/reminder-note-api/internal/handlers"
 	"github.com/zivwu/reminder-note-api/internal/routes"
 	"github.com/zivwu/reminder-note-api/internal/services"
@@ -14,14 +15,17 @@ func main() {
 	config.InitConfig()
 	app := fx.New(
 		fx.Provide(
+			db.InitMongoDB,
+			handlers.NewReminderHandler,
+			services.NewReminderService,
+		),
+		fx.Provide(
 			routes.RootRouter,
 		),
+
 		fx.Provide(
 			services.NewLineWebhookService,
 			handlers.NewLineWebhookHandler,
-		),
-		fx.Provide(
-			handlers.NewReminderHandler,
 		),
 		fx.Invoke(StartServer),
 	)

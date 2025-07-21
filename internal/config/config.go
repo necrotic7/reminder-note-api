@@ -11,11 +11,17 @@ type EnvConfig struct {
 		ChannelSecret      string
 		ChannelAccessToken string
 	}
+	DB struct {
+		Host     string
+		Port     string
+		User     string
+		Password string
+	}
 }
 
 var Env EnvConfig
 
-func InitConfig() {
+func InitConfig() EnvConfig {
 	// 載入 .env 檔案
 	err := godotenv.Load()
 	if err != nil {
@@ -27,4 +33,13 @@ func InitConfig() {
 
 	Env.Line.ChannelSecret = viper.GetString("LINE_CHANNEL_SECRET")
 	Env.Line.ChannelAccessToken = viper.GetString("LINE_CHANNEL_ACCESS_TOKEN")
+
+	Env.DB.Host = viper.GetString("MONGO_DB_HOST")
+	Env.DB.Port = viper.GetString("MONGO_DB_PORT")
+	Env.DB.User = viper.GetString("MONGO_DB_USER")
+	Env.DB.Password = viper.GetString("MONGO_DB_PASSWORD")
+
+	log.Println("init config success")
+
+	return Env
 }
