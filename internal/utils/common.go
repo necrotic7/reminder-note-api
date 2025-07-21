@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"log"
+	"reflect"
 )
 
 func ToJson(data any) string {
@@ -12,4 +13,14 @@ func ToJson(data any) string {
 		return ""
 	}
 	return string(result)
+}
+
+func IsNill(d ...any) bool {
+	for i := range d {
+		v := reflect.ValueOf(d[i])
+		if !v.IsValid() || (v.Kind() == reflect.Ptr && v.IsNil()) {
+			return true
+		}
+	}
+	return false
 }

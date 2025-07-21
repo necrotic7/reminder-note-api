@@ -29,7 +29,7 @@ func (h *ReminderHandler) CreateReminder(c *gin.Context) {
 		return
 	}
 
-	err := h.svc.CreateReminder(c.Request.Context(), req)
+	err := h.svc.CreateReminderFlow(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  false,
