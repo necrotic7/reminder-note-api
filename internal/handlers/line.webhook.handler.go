@@ -17,7 +17,7 @@ func NewLineWebhookHandler(svc *services.LineWebhookService) *LineWebhookHandler
 }
 
 func (h *LineWebhookHandler) WebhookHandler(c *gin.Context) {
-	events, err := h.svc.BotClient.ParseRequest(c.Request)
+	events, err := h.svc.BotSvc.Client.ParseRequest(c.Request)
 	if err != nil {
 		if err == linebot.ErrInvalidSignature {
 			c.AbortWithStatus(http.StatusBadRequest)

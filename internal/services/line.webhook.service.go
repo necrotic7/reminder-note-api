@@ -7,13 +7,12 @@ import (
 )
 
 type LineWebhookService struct {
-	BotClient *linebot.Client
+	BotSvc *LineBotService
 }
 
-func NewLineWebhookService() *LineWebhookService {
-	bot := InitLineBot()
+func NewLineWebhookService(bot *LineBotService) *LineWebhookService {
 	return &LineWebhookService{
-		BotClient: bot,
+		BotSvc: bot,
 	}
 }
 
@@ -42,7 +41,7 @@ func (s *LineWebhookService) RootEventHandler(events []*linebot.Event) (err erro
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				// Echo 回傳
-				if _, err = s.BotClient.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("你說的是："+message.Text)).Do(); err != nil {
+				if _, err = s.BotSvc.Client.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("你說的是："+message.Text)).Do(); err != nil {
 					log.Print(err)
 					return err
 				}

@@ -15,20 +15,11 @@ import (
 func main() {
 	config.InitConfig()
 	app := fx.New(
-		fx.Provide(
-			db.InitMongoDB,
-			handlers.NewReminderHandler,
-			services.NewReminderService,
-			repositories.NewReminderRepository,
-		),
-		fx.Provide(
-			routes.RootRouter,
-		),
-
-		fx.Provide(
-			services.NewLineWebhookService,
-			handlers.NewLineWebhookHandler,
-		),
+		db.Module,
+		routes.Module,
+		handlers.Module,
+		repositories.Module,
+		services.Module,
 		fx.Invoke(StartServer),
 	)
 

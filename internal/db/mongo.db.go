@@ -41,3 +41,10 @@ func InitMongoDB(lc fx.Lifecycle) (*mongo.Client, error) {
 	})
 	return client, nil
 }
+
+var Module = fx.Module(
+	"MongoDB",
+	fx.Provide(
+		InitMongoDB,
+	),
+)

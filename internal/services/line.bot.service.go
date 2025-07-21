@@ -7,9 +7,11 @@ import (
 	"github.com/zivwu/reminder-note-api/internal/config"
 )
 
-var Client *linebot.Client
+type LineBotService struct {
+	Client *linebot.Client
+}
 
-func InitLineBot() *linebot.Client {
+func NewLineBotService() *LineBotService {
 	bot, err := linebot.New(
 		config.Env.Line.ChannelSecret,
 		config.Env.Line.ChannelAccessToken,
@@ -18,6 +20,7 @@ func InitLineBot() *linebot.Client {
 		log.Panicln("init line bot fail:", err)
 	}
 
-	Client = bot
-	return bot
+	return &LineBotService{
+		Client: bot,
+	}
 }
