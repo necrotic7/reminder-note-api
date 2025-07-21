@@ -6,22 +6,19 @@ import (
 	"log"
 	"time"
 
-	"github.com/zivwu/reminder-note-api/internal/consts"
 	"github.com/zivwu/reminder-note-api/internal/models"
+	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
 	"github.com/zivwu/reminder-note-api/internal/utils"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type ReminderService struct {
-	DB *mongo.Client
+	ReminderRepo *repositories.ReminderRepository
 }
 
-func NewReminderService(db *mongo.Client) *ReminderService {
+func NewReminderService(reminderRepo *repositories.ReminderRepository) *ReminderService {
 	return &ReminderService{
-		DB: db,
+		ReminderRepo: reminderRepo,
 	}
 }
 
@@ -31,7 +28,7 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req types.ReqC
 		log.Println("檢查創建 Reminder 參數失敗：", err)
 		return
 	}
-	err = s.InsertReminder(ctx, req)
+	err = s.ReminderRepo.InsertReminder(ctx, req)
 	if err != nil {
 		log.Println("創建 Reminder 失敗：", err)
 		return
@@ -80,60 +77,13 @@ func (s *ReminderService) ValidationCreateReminderReq(req types.ReqCreateReminde
 	return
 }
 
-func (s *ReminderService) InsertReminder(ctx context.Context, req types.ReqCreateReminderBody) (err error) {
-	collection := s.DB.Database("reminder-note").Collection("reminders")
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	params := models.Reminder{
-		UserID:     req.UserId,
-		Title:      req.Title,
-		Content:    req.Content,
-		Frequency:  req.Frequency,
-		RemindTime: models.RemindTime(req.RemindTime),
-		Deleted:    false,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGetUserRemindersQuery) ([]models.Reminder, error) {
+	if utils.IsEmpty(req.UserId) {
+		return nil, fmt.Errorf("missing userId")
 	}
-	_, err = collection.InsertOne(ctx, params)
+	result, err := s.ReminderRepo.SearchUserReminders(ctx, req)
 	if err != nil {
-		log.Println("insert reminder fail: ", err)
-		return err
+		return nil, fmt.Errorf("search User Reminders fail: %w", err)
 	}
-	return
-}
-
-func (s *ReminderService) GetUserReminders(ctx context.Context, params types.ReqGetUserRemindersQuery) ([]models.Reminder, error) {
-	collection := s.DB.Database("reminder-note").Collection("reminders")
-	filter := bson.M{}
-	if !utils.IsEmpty(params.UserId) {
-		filter["userId"] = params.UserId
-	}
-
-	page := 1
-	if params.Page != nil {
-		page = *params.Page
-	}
-	options := options.Find()
-	if params.Page == nil {
-		*params.Page = 1
-	}
-
-	offset := (page - 1) * consts.PageSize
-	options.SetLimit(int64(consts.PageSize))
-	options.SetSkip(int64(offset))
-	options.SetSort(bson.M{"createdAt": -1})
-
-	cursor, err := collection.Find(ctx, filter, options)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var results []models.Reminder
-	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
-	}
-
-	return results, nil
+	return result, nil
 }

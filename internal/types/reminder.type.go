@@ -23,3 +23,8 @@ type ReqGetUserRemindersQuery struct {
 	UserId string `form:"userId" binding:"required"`
 	Page   *int   `form:"page"`
 }
+
+type SearchUserRemindersParams struct {
+	UserId string
+	Page   *int
+}

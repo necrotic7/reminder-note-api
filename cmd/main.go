@@ -5,6 +5,7 @@ import (
 	"github.com/zivwu/reminder-note-api/internal/config"
 	"github.com/zivwu/reminder-note-api/internal/db"
 	"github.com/zivwu/reminder-note-api/internal/handlers"
+	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/routes"
 	"github.com/zivwu/reminder-note-api/internal/services"
 
@@ -18,6 +19,7 @@ func main() {
 			db.InitMongoDB,
 			handlers.NewReminderHandler,
 			services.NewReminderService,
+			repositories.NewReminderRepository,
 		),
 		fx.Provide(
 			routes.RootRouter,
