@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zivwu/reminder-note-api/internal/services"
 	"github.com/zivwu/reminder-note-api/internal/types"
+	"github.com/zivwu/reminder-note-api/internal/utils"
 )
 
 type ReminderHandler struct {
@@ -22,20 +23,44 @@ func NewReminderHandler(svc *services.ReminderService) *ReminderHandler {
 func (h *ReminderHandler) CreateReminder(c *gin.Context) {
 	var req types.ReqCreateReminderBody
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  false,
-			"message": fmt.Sprint("invalid parameters:", err),
+		utils.Resp(c, utils.RespParams{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("invalid parameters:", err),
 		})
 		return
 	}
 
 	err := h.svc.CreateReminderFlow(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  false,
-			"message": fmt.Sprint("fail:", err),
+		utils.Resp(c, utils.RespParams{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("fail:", err),
 		})
 		return
 	}
-	c.JSON(http.StatusOK, "")
+	utils.Resp(c, utils.RespParams{Status: http.StatusOK})
+}
+
+func (h *ReminderHandler) GetUserReminders(c *gin.Context) {
+	var query types.ReqGetUserRemindersQuery
+	if err := c.BindQuery(&query); err != nil {
+		utils.Resp(c, utils.RespParams{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("invalid parameters:", err),
+		})
+		return
+	}
+
+	result, err := h.svc.GetUserReminders(c.Request.Context(), query)
+	if err != nil {
+		utils.Resp(c, utils.RespParams{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("fail: ", err),
+		})
+		return
+	}
+	utils.Resp(c, utils.RespParams{
+		Status: http.StatusOK,
+		Data:   result,
+	})
 }

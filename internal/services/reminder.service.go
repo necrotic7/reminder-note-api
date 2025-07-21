@@ -6,10 +6,13 @@ import (
 	"log"
 	"time"
 
+	"github.com/zivwu/reminder-note-api/internal/consts"
 	"github.com/zivwu/reminder-note-api/internal/models"
 	"github.com/zivwu/reminder-note-api/internal/types"
 	"github.com/zivwu/reminder-note-api/internal/utils"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type ReminderService struct {
@@ -39,29 +42,29 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req types.ReqC
 func (s *ReminderService) ValidationCreateReminderReq(req types.ReqCreateReminderBody) (err error) {
 	switch req.Frequency {
 	case models.EnumRemindFrequencyOnce:
-		if utils.IsNill(req.RemindTime.Year, req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
+		if utils.IsEmpty(req.RemindTime.Year, req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入年/月/日/時/分")
 		}
 		if *req.RemindTime.Year < time.Now().Year() {
 			return fmt.Errorf("新創建的年份(%v)不可小於今年年份(%v)", *req.RemindTime.Year, time.Now().Year())
 		}
 	case models.EnumRemindFrequencyDaily:
-		if utils.IsNill(req.RemindTime.Hour, req.RemindTime.Minute) {
+		if utils.IsEmpty(req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入時/分")
 		}
 	case models.EnumRemindFrequencyWeekly:
-		if utils.IsNill(req.RemindTime.Weekday, req.RemindTime.Hour, req.RemindTime.Minute) {
+		if utils.IsEmpty(req.RemindTime.Weekday, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入星期/時/分")
 		}
 		if *req.RemindTime.Weekday < 1 || *req.RemindTime.Weekday > 7 {
 			return fmt.Errorf("輸入的星期不合法：%d", *req.RemindTime.Weekday)
 		}
 	case models.EnumRemindFrequencyMonthly:
-		if utils.IsNill(req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
+		if utils.IsEmpty(req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入日/時/分")
 		}
 	case models.EnumRemindFrequencyAnnually:
-		if utils.IsNill(req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
+		if utils.IsEmpty(req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入月/日/時/分")
 		}
 	default:
@@ -98,4 +101,39 @@ func (s *ReminderService) InsertReminder(ctx context.Context, req types.ReqCreat
 		return err
 	}
 	return
+}
+
+func (s *ReminderService) GetUserReminders(ctx context.Context, params types.ReqGetUserRemindersQuery) ([]models.Reminder, error) {
+	collection := s.DB.Database("reminder-note").Collection("reminders")
+	filter := bson.M{}
+	if !utils.IsEmpty(params.UserId) {
+		filter["userId"] = params.UserId
+	}
+
+	page := 1
+	if params.Page != nil {
+		page = *params.Page
+	}
+	options := options.Find()
+	if params.Page == nil {
+		*params.Page = 1
+	}
+
+	offset := (page - 1) * consts.PageSize
+	options.SetLimit(int64(consts.PageSize))
+	options.SetSkip(int64(offset))
+	options.SetSort(bson.M{"createdAt": -1})
+
+	cursor, err := collection.Find(ctx, filter, options)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []models.Reminder
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }

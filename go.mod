@@ -2,17 +2,18 @@ module github.com/zivwu/reminder-note-api
 
 go 1.24.5
 
-require github.com/spf13/viper v1.20.1
+require (
+	github.com/spf13/viper v1.20.1
+	go.mongodb.org/mongo-driver/v2 v2.2.2
+)
 
 require (
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
-	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.mongodb.org/mongo-driver/v2 v2.2.2 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 )
 
@@ -46,7 +47,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.0 // indirect
-	go.mongodb.org/mongo-driver v1.17.4
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/fx v1.24.0
 	go.uber.org/multierr v1.10.0 // indirect

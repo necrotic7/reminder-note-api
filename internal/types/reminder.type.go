@@ -18,3 +18,8 @@ type RemindTime struct {
 	Hour    *int `json:"hour"`
 	Minute  *int `json:"minute"`
 }
+
+type ReqGetUserRemindersQuery struct {
+	UserId string `form:"userId" binding:"required"`
+	Page   *int   `form:"page"`
+}

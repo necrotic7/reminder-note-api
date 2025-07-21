@@ -3,11 +3,11 @@ package models
 import (
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Reminder struct {
-	ID         primitive.ObjectID  `bson:"_id,omitempty"`
+	ID         bson.ObjectID       `bson:"_id,omitempty"`
 	UserID     string              `bson:"userId"`
 	Title      string              `bson:"title"`
 	Content    string              `bson:"content"`
