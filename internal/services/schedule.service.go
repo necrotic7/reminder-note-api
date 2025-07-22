@@ -3,18 +3,21 @@ package services
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/robfig/cron/v3"
 )
 
 type ScheduleService struct {
-	cron *cron.Cron
+	cron            *cron.Cron
+	reminderService *ReminderService
 }
 
-func NewScheduleService() *ScheduleService {
+func NewScheduleService(reminderService *ReminderService) *ScheduleService {
 	c := cron.New(cron.WithSeconds())
 	s := ScheduleService{
-		cron: c,
+		cron:            c,
+		reminderService: reminderService,
 	}
 	return &s
 }
@@ -23,6 +26,11 @@ func (s *ScheduleService) registerJobs() {
 	// 這邊可以註冊你所有的任務
 	s.cron.AddFunc("0 * * * * *", func() {
 		log.Println("Reminder 推播排程任務啟動")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		s.reminderService.ReminderScheduler(ctx)
+
 	})
 
 	log.Println("🟢 Register Job Complete")

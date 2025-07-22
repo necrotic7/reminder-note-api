@@ -7,10 +7,10 @@ type ReqCreateReminderBody struct {
 	Frequency  models.EnumRemindFrequency `json:"frequency" binding:"required"`
 	Title      string                     `json:"title" binding:"required"`
 	Content    string                     `json:"content"`
-	RemindTime RemindTime                 `json:"remindTime" binding:"required"`
+	RemindTime RemindTimeBody             `json:"remindTime" binding:"required"`
 }
 
-type RemindTime struct {
+type RemindTimeBody struct {
 	Year    *int `json:"year"`
 	Month   *int `json:"month"`
 	Date    *int `json:"date"`
@@ -25,6 +25,7 @@ type ReqGetUserRemindersQuery struct {
 }
 
 type SearchUserRemindersParams struct {
-	UserId string
-	Page   *int
+	UserId     string
+	Page       *int
+	RemindTime RemindTimeBody
 }

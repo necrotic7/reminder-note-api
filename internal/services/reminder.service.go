@@ -87,3 +87,34 @@ func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGet
 	}
 	return result, nil
 }
+
+func (s *ReminderService) ReminderScheduler(ctx context.Context) {
+	now := time.Now()
+	year := now.Year()
+	month := now.Month()
+	date := now.Day()
+	weekday := now.Weekday()
+	hour := now.Hour()
+	minute := now.Minute()
+	remindTime := models.RemindTime{
+		Year:    &year,
+		Month:   (*int)(&month),
+		Date:    &date,
+		Weekday: (*int)(&weekday),
+		Hour:    &hour,
+		Minute:  &minute,
+	}
+	log.Printf("[ReminderScheduler] Reminder撈取時間範圍：%v/%v/%v (%v) %v:%v \n", year, month, date, weekday, hour, minute)
+	// 撈出要通知的對象
+	result, err := s.ReminderRepo.SearchReminderNotifications(ctx, remindTime)
+	if err != nil {
+		log.Println("reminder推播排程執行失敗：", err)
+		return
+	}
+
+	log.Printf("共有 %v 筆Reminder推播需要發送\n", len(result))
+
+	if len(result) == 0 {
+		return
+	}
+}
