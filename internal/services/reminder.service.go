@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/zivwu/reminder-note-api/internal/models"
 	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
@@ -13,12 +14,14 @@ import (
 )
 
 type ReminderService struct {
-	ReminderRepo *repositories.ReminderRepository
+	ReminderRepo   *repositories.ReminderRepository
+	LineBotService *LineBotService
 }
 
-func NewReminderService(reminderRepo *repositories.ReminderRepository) *ReminderService {
+func NewReminderService(reminderRepo *repositories.ReminderRepository, lineBotService *LineBotService) *ReminderService {
 	return &ReminderService{
-		ReminderRepo: reminderRepo,
+		ReminderRepo:   reminderRepo,
+		LineBotService: lineBotService,
 	}
 }
 
@@ -114,7 +117,18 @@ func (s *ReminderService) ReminderScheduler(ctx context.Context) {
 
 	log.Printf("共有 %v 筆Reminder推播需要發送\n", len(result))
 
-	if len(result) == 0 {
+	if utils.IsEmpty(result) {
 		return
+	}
+
+	for _, r := range result {
+		messages := []linebot.SendingMessage{
+			linebot.NewTextMessage(fmt.Sprintf("提醒事項：%v\n%v", r.Title, r.Content)),
+		}
+		params := types.PushMessageParams{
+			UserId:   r.UserID,
+			Messages: messages,
+		}
+		s.LineBotService.PushToNotifyChan(params)
 	}
 }
