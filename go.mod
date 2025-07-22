@@ -3,6 +3,7 @@ module github.com/zivwu/reminder-note-api
 go 1.24.5
 
 require (
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/viper v1.20.1
 	go.mongodb.org/mongo-driver/v2 v2.2.2
 )

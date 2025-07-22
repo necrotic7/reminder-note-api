@@ -1,12 +1,30 @@
 package services
 
-import "go.uber.org/fx"
+import (
+	"context"
+	"log"
+
+	"go.uber.org/fx"
+)
 
 var Module = fx.Module(
-	"service",
+	"services",
 	fx.Provide(
+		NewScheduleService,
 		NewLineBotService,
 		NewLineWebhookService,
 		NewReminderService,
 	),
+	fx.Invoke(func(lc fx.Lifecycle, s *ScheduleService) {
+		lc.Append(fx.Hook{
+			OnStart: func(ctx context.Context) error {
+				log.Println("🟢 Starting ScheduleService")
+				return s.Start(ctx)
+			},
+			OnStop: func(ctx context.Context) error {
+				log.Println("🛑 ScheduleService shutdown")
+				return s.Stop(ctx)
+			},
+		})
+	}),
 )
