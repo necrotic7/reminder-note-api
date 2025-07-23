@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/zivwu/reminder-note-api/internal/consts"
 	"github.com/zivwu/reminder-note-api/internal/models"
 	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
@@ -133,13 +132,9 @@ func (s *ReminderService) ReminderScheduler(ctx context.Context) {
 		messages := []linebot.SendingMessage{
 			linebot.NewTextMessage(fmt.Sprintf("提醒事項：%v\n%v", r.Title, r.Content)),
 		}
-		ctx, cancel := context.WithTimeout(ctx, consts.Timeout)
-		params := &types.PushMessageParams{
-			Ctx:      ctx,
-			Cancel:   cancel,
+		s.LineBotService.PushNotifyMessage(&types.PushMessageParams{
 			UserId:   r.UserID,
 			Messages: messages,
-		}
-		s.LineBotService.PushNotifyMessage(params)
+		})
 	}
 }

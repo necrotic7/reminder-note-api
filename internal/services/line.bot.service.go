@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -36,54 +37,79 @@ func NewLineBotService(notifyRecordRepo *repositories.NotifyRecordsRepository) *
 		retryNotifyChan:  make(chan *types.RetryPushMessageParams, consts.Semaphore),
 		notifyRecordRepo: notifyRecordRepo,
 	}
-
 	s.Start()
-
 	return &s
 }
 
+// 主流程
 func (s *LineBotService) Start() {
 	go func() {
 		for {
 			select {
 			case params := <-s.pushNotifyChan:
+				ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
+				done := make(chan error, 1)
 				go func(p *types.PushMessageParams) {
-					if err := s.pushMessage(p); err != nil {
+					done <- s.pushMessage(p)
+				}(params)
+
+				select {
+				case err := <-done:
+					if err != nil {
 						log.Println("push message channel operate error:", err)
 						s.RetryNotifyMessage(&types.RetryPushMessageParams{
-							PushMessageParams: p,
+							PushMessageParams: params,
 							Retry:             0,
 						})
 					}
-				}(params)
+				case <-ctx.Done():
+					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+						log.Println("push message channel operate timeout")
+						s.RetryNotifyMessage(&types.RetryPushMessageParams{
+							PushMessageParams: params,
+							Retry:             0,
+						})
+					}
+				}
+				cancel()
 			case retries := <-s.retryNotifyChan:
+				ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout+consts.RetryInterval)
+				// retry 3 次
+				if retries.Retry >= 3 {
+					log.Printf("訊息id %s 已達重試上限\n", retries.NotifyRecordID)
+					continue
+				}
+				done := make(chan error, 1)
 				go func(r *types.RetryPushMessageParams) {
-					// retry 3 次
-					if r.Retry >= 3 {
-						log.Println("訊息已達重試上限")
-						return
-					}
 					time.Sleep(consts.RetryInterval)
-					if err := s.pushMessage(r.PushMessageParams); err != nil {
-						log.Println("retry push message channel operate error:", err)
-						r.Retry += 1
-						s.RetryNotifyMessage(r)
-					}
+					done <- s.pushMessage(r.PushMessageParams)
 				}(retries)
-			}
 
+				select {
+				case err := <-done:
+					if err != nil {
+						retries.Retry += 1
+						log.Printf("retry push message channel operate error:%v\n, retry counts: %d", err, retries.Retry)
+						s.RetryNotifyMessage(retries)
+					}
+				case <-ctx.Done():
+					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+						retries.Retry += 1
+						log.Printf("retry push message channel operate timeout, retry counts: %d\n", retries.Retry)
+						s.RetryNotifyMessage(retries)
+					}
+				}
+				cancel()
+			}
 		}
 	}()
 }
 
+// 供外部呼叫，寫入發送紀錄並排進推播訊息的channel
 func (s *LineBotService) PushNotifyMessage(params *types.PushMessageParams) error {
-	// 如果沒有傳入ctx 創建一個預設的
-	if utils.IsEmpty(params.Ctx) {
-		ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
-		params.Ctx = ctx
-		params.Cancel = cancel
-	}
-	ID, err := s.notifyRecordRepo.InsertNotifyRecord(params.Ctx, models.InsertNotifyRecord{
+	ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
+	defer cancel()
+	ID, err := s.notifyRecordRepo.InsertNotifyRecord(ctx, models.InsertNotifyRecord{
 		UserID: params.UserId,
 		Content: map[string]any{
 			"messages": utils.ToJson(params.Messages),
@@ -100,10 +126,12 @@ func (s *LineBotService) PushNotifyMessage(params *types.PushMessageParams) erro
 	return nil
 }
 
+// 供外部呼叫，更新發送紀錄並排進重試發送訊息的channel
 func (s *LineBotService) RetryNotifyMessage(params *types.RetryPushMessageParams) {
 	s.retryNotifyChan <- params
 }
 
+// 透過line bot client發送訊息
 func (s *LineBotService) pushMessage(params *types.PushMessageParams) error {
 	_, err := s.Client.PushMessage(params.UserId, params.Messages...).Do()
 	if err != nil {
