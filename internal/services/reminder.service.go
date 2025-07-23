@@ -125,10 +125,13 @@ func (s *ReminderService) ReminderScheduler(ctx context.Context) {
 		messages := []linebot.SendingMessage{
 			linebot.NewTextMessage(fmt.Sprintf("提醒事項：%v\n%v", r.Title, r.Content)),
 		}
-		params := types.PushMessageParams{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		params := &types.PushMessageParams{
+			Ctx:      ctx,
+			Cancel:   cancel,
 			UserId:   r.UserID,
 			Messages: messages,
 		}
-		s.LineBotService.PushToNotifyChan(params)
+		s.LineBotService.PushNotifyMessage(params)
 	}
 }

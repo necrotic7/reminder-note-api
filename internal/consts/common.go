@@ -1,3 +1,10 @@
 package consts
 
-const PageSize = 10
+import "time"
+
+// Default
+const (
+	PageSize      = 10
+	Semaphore     = 10
+	RetryInterval = 3 * time.Second
+)

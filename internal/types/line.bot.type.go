@@ -1,8 +1,19 @@
 package types
 
-import "github.com/line/line-bot-sdk-go/linebot"
+import (
+	"context"
+
+	"github.com/line/line-bot-sdk-go/linebot"
+)
 
 type PushMessageParams struct {
+	Ctx      context.Context
+	Cancel   context.CancelFunc
 	UserId   string
 	Messages []linebot.SendingMessage
+}
+
+type RetryPushMessageParams struct {
+	*PushMessageParams
+	Retry int
 }
