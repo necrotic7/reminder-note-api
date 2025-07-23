@@ -1,22 +1,27 @@
 package services
 
 import (
+	"context"
 	"log"
 	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/zivwu/reminder-note-api/internal/config"
 	"github.com/zivwu/reminder-note-api/internal/consts"
+	"github.com/zivwu/reminder-note-api/internal/models"
+	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
+	"github.com/zivwu/reminder-note-api/internal/utils"
 )
 
 type LineBotService struct {
-	Client          *linebot.Client
-	pushNotifyChan  chan *types.PushMessageParams
-	retryNotifyChan chan *types.RetryPushMessageParams
+	Client           *linebot.Client
+	pushNotifyChan   chan *types.PushMessageParams
+	retryNotifyChan  chan *types.RetryPushMessageParams
+	notifyRecordRepo *repositories.NotifyRecordsRepository
 }
 
-func NewLineBotService() *LineBotService {
+func NewLineBotService(notifyRecordRepo *repositories.NotifyRecordsRepository) *LineBotService {
 	bot, err := linebot.New(
 		config.Env.Line.ChannelSecret,
 		config.Env.Line.ChannelAccessToken,
@@ -26,9 +31,10 @@ func NewLineBotService() *LineBotService {
 	}
 
 	s := LineBotService{
-		Client:          bot,
-		pushNotifyChan:  make(chan *types.PushMessageParams, consts.Semaphore),
-		retryNotifyChan: make(chan *types.RetryPushMessageParams, consts.Semaphore),
+		Client:           bot,
+		pushNotifyChan:   make(chan *types.PushMessageParams, consts.Semaphore),
+		retryNotifyChan:  make(chan *types.RetryPushMessageParams, consts.Semaphore),
+		notifyRecordRepo: notifyRecordRepo,
 	}
 
 	s.Start()
@@ -37,7 +43,6 @@ func NewLineBotService() *LineBotService {
 }
 
 func (s *LineBotService) Start() {
-
 	go func() {
 		for {
 			select {
@@ -71,8 +76,28 @@ func (s *LineBotService) Start() {
 	}()
 }
 
-func (s *LineBotService) PushNotifyMessage(params *types.PushMessageParams) {
+func (s *LineBotService) PushNotifyMessage(params *types.PushMessageParams) error {
+	// 如果沒有傳入ctx 創建一個預設的
+	if utils.IsEmpty(params.Ctx) {
+		ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
+		params.Ctx = ctx
+		params.Cancel = cancel
+	}
+	ID, err := s.notifyRecordRepo.InsertNotifyRecord(params.Ctx, models.InsertNotifyRecord{
+		UserID: params.UserId,
+		Content: map[string]any{
+			"messages": utils.ToJson(params.Messages),
+		},
+		Status: false, // 第一次寫入十位
+		Retry:  0,
+	})
+	if err != nil {
+		log.Println("Push Notify Message insert record fail:", err)
+		return err
+	}
+	params.NotifyRecordID = ID
 	s.pushNotifyChan <- params
+	return nil
 }
 
 func (s *LineBotService) RetryNotifyMessage(params *types.RetryPushMessageParams) {

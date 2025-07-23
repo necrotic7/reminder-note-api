@@ -14,32 +14,32 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-type ReminderRepository struct {
-	DB *mongo.Client
+type RemindersRepository struct {
+	db *mongo.Client
 }
 
-func NewReminderRepository(db *mongo.Client) *ReminderRepository {
-	return &ReminderRepository{
-		DB: db,
+func NewRemindersRepository(db *mongo.Client) *RemindersRepository {
+	return &RemindersRepository{
+		db: db,
 	}
 }
 
-func (r *ReminderRepository) InsertReminder(ctx context.Context, req types.ReqCreateReminderBody) (err error) {
-	collection := r.DB.Database("reminder-note").Collection("reminders")
+func (r *RemindersRepository) InsertReminder(ctx context.Context, params models.InsertReminderParams) (err error) {
+	collection := r.db.Database("reminder-note").Collection("reminders")
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	params := models.Reminder{
-		UserID:     req.UserId,
-		Title:      req.Title,
-		Content:    req.Content,
-		Frequency:  req.Frequency,
-		RemindTime: models.RemindTime(req.RemindTime),
+	doc := models.ReminderModel{
+		UserID:     params.UserID,
+		Title:      params.Title,
+		Content:    params.Content,
+		Frequency:  params.Frequency,
+		RemindTime: models.RemindTime(params.RemindTime),
 		Deleted:    false,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
-	_, err = collection.InsertOne(ctx, params)
+	_, err = collection.InsertOne(ctx, doc)
 	if err != nil {
 		log.Println("insert reminder fail: ", err)
 		return err
@@ -47,8 +47,8 @@ func (r *ReminderRepository) InsertReminder(ctx context.Context, req types.ReqCr
 	return
 }
 
-func (r *ReminderRepository) SearchUserReminders(ctx context.Context, params types.ReqGetUserRemindersQuery) ([]models.Reminder, error) {
-	collection := r.DB.Database("reminder-note").Collection("reminders")
+func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params types.ReqGetUserRemindersQuery) ([]models.ReminderModel, error) {
+	collection := r.db.Database("reminder-note").Collection("reminders")
 	filter := bson.M{}
 	if !utils.IsEmpty(params.UserId) {
 		filter["userId"] = params.UserId
@@ -76,7 +76,7 @@ func (r *ReminderRepository) SearchUserReminders(ctx context.Context, params typ
 	}
 	defer cursor.Close(ctx)
 
-	var results []models.Reminder
+	var results []models.ReminderModel
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -84,8 +84,8 @@ func (r *ReminderRepository) SearchUserReminders(ctx context.Context, params typ
 	return results, nil
 }
 
-func (r *ReminderRepository) SearchReminderNotifications(ctx context.Context, remindTime models.RemindTime) ([]models.Reminder, error) {
-	collection := r.DB.Database("reminder-note").Collection("reminders")
+func (r *RemindersRepository) SearchReminderNotifications(ctx context.Context, remindTime models.RemindTime) ([]models.ReminderModel, error) {
+	collection := r.db.Database("reminder-note").Collection("reminders")
 
 	filter := bson.M{
 		"deleted": false,
@@ -138,7 +138,7 @@ func (r *ReminderRepository) SearchReminderNotifications(ctx context.Context, re
 	}
 	defer cursor.Close(ctx)
 
-	var results []models.Reminder
+	var results []models.ReminderModel
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}

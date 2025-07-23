@@ -7,10 +7,11 @@ import (
 )
 
 type PushMessageParams struct {
-	Ctx      context.Context
-	Cancel   context.CancelFunc
-	UserId   string
-	Messages []linebot.SendingMessage
+	Ctx            context.Context
+	Cancel         context.CancelFunc
+	NotifyRecordID string
+	UserId         string
+	Messages       []linebot.SendingMessage
 }
 
 type RetryPushMessageParams struct {

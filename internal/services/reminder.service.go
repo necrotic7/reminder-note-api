@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
+	"github.com/zivwu/reminder-note-api/internal/consts"
 	"github.com/zivwu/reminder-note-api/internal/models"
 	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
@@ -14,11 +15,11 @@ import (
 )
 
 type ReminderService struct {
-	ReminderRepo   *repositories.ReminderRepository
+	ReminderRepo   *repositories.RemindersRepository
 	LineBotService *LineBotService
 }
 
-func NewReminderService(reminderRepo *repositories.ReminderRepository, lineBotService *LineBotService) *ReminderService {
+func NewReminderService(reminderRepo *repositories.RemindersRepository, lineBotService *LineBotService) *ReminderService {
 	return &ReminderService{
 		ReminderRepo:   reminderRepo,
 		LineBotService: lineBotService,
@@ -31,7 +32,14 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req types.ReqC
 		log.Println("檢查創建 Reminder 參數失敗：", err)
 		return
 	}
-	err = s.ReminderRepo.InsertReminder(ctx, req)
+	params := models.InsertReminderParams{
+		UserID:     req.UserID,
+		Title:      req.Title,
+		Content:    req.Content,
+		Frequency:  req.Frequency,
+		RemindTime: models.RemindTime(req.RemindTime),
+	}
+	err = s.ReminderRepo.InsertReminder(ctx, params)
 	if err != nil {
 		log.Println("創建 Reminder 失敗：", err)
 		return
@@ -80,7 +88,7 @@ func (s *ReminderService) ValidationCreateReminderReq(req types.ReqCreateReminde
 	return
 }
 
-func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGetUserRemindersQuery) ([]models.Reminder, error) {
+func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGetUserRemindersQuery) ([]models.ReminderModel, error) {
 	if utils.IsEmpty(req.UserId) {
 		return nil, fmt.Errorf("missing userId")
 	}
@@ -125,7 +133,7 @@ func (s *ReminderService) ReminderScheduler(ctx context.Context) {
 		messages := []linebot.SendingMessage{
 			linebot.NewTextMessage(fmt.Sprintf("提醒事項：%v\n%v", r.Title, r.Content)),
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, consts.Timeout)
 		params := &types.PushMessageParams{
 			Ctx:      ctx,
 			Cancel:   cancel,

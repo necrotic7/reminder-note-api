@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-type Reminder struct {
+type ReminderModel struct {
 	ID         bson.ObjectID       `bson:"_id,omitempty"`
 	UserID     string              `bson:"userId"`
 	Title      string              `bson:"title"`
@@ -35,4 +35,12 @@ type RemindTime struct {
 	Weekday *int `bson:"weekday,omitempty"`
 	Hour    *int `bson:"hour,omitempty"`
 	Minute  *int `bson:"minute,omitempty"`
+}
+
+type InsertReminderParams struct {
+	UserID     string              `bson:"userId"`
+	Title      string              `bson:"title"`
+	Content    string              `bson:"content"`
+	Frequency  EnumRemindFrequency `bson:"frequency"`
+	RemindTime RemindTime          `bson:"remindTime"`
 }

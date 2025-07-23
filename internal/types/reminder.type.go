@@ -3,7 +3,7 @@ package types
 import "github.com/zivwu/reminder-note-api/internal/models"
 
 type ReqCreateReminderBody struct {
-	UserId     string                     `json:"userId" binding:"required"`
+	UserID     string                     `json:"userId" binding:"required"`
 	Frequency  models.EnumRemindFrequency `json:"frequency" binding:"required"`
 	Title      string                     `json:"title" binding:"required"`
 	Content    string                     `json:"content"`
