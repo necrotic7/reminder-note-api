@@ -22,3 +22,10 @@ type InsertNotifyRecord struct {
 	Status  bool           `bson:"status"`
 	Retry   int            `bson:"retry"`
 }
+
+type UpdateNotifyRecord struct {
+	ID     string `bson:"_id"`
+	UserID string `bson:"userId"`
+	Status bool   `bson:"status"`
+	Retry  int    `bson:"retry"`
+}

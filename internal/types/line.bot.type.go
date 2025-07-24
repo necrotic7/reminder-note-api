@@ -8,9 +8,5 @@ type PushMessageParams struct {
 	NotifyRecordID string
 	UserId         string
 	Messages       []linebot.SendingMessage
-}
-
-type RetryPushMessageParams struct {
-	*PushMessageParams
-	Retry int
+	Retry          int
 }

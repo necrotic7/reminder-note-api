@@ -18,7 +18,6 @@ import (
 type LineBotService struct {
 	Client           *linebot.Client
 	pushNotifyChan   chan *types.PushMessageParams
-	retryNotifyChan  chan *types.RetryPushMessageParams
 	notifyRecordRepo *repositories.NotifyRecordsRepository
 }
 
@@ -34,7 +33,6 @@ func NewLineBotService(notifyRecordRepo *repositories.NotifyRecordsRepository) *
 	s := LineBotService{
 		Client:           bot,
 		pushNotifyChan:   make(chan *types.PushMessageParams, consts.Semaphore),
-		retryNotifyChan:  make(chan *types.RetryPushMessageParams, consts.Semaphore),
 		notifyRecordRepo: notifyRecordRepo,
 	}
 	s.Start()
@@ -44,100 +42,87 @@ func NewLineBotService(notifyRecordRepo *repositories.NotifyRecordsRepository) *
 // 主流程
 func (s *LineBotService) Start() {
 	go func() {
-		for {
-			select {
-			case params := <-s.pushNotifyChan:
-				ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
-				done := make(chan error, 1)
-				go func(p *types.PushMessageParams) {
-					done <- s.pushMessage(p)
-				}(params)
-
-				select {
-				case err := <-done:
-					if err != nil {
-						log.Println("push message channel operate error:", err)
-						s.RetryNotifyMessage(&types.RetryPushMessageParams{
-							PushMessageParams: params,
-							Retry:             0,
-						})
-					}
-				case <-ctx.Done():
-					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-						log.Println("push message channel operate timeout")
-						s.RetryNotifyMessage(&types.RetryPushMessageParams{
-							PushMessageParams: params,
-							Retry:             0,
-						})
-					}
-				}
-				cancel()
-			case retries := <-s.retryNotifyChan:
-				ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout+consts.RetryInterval)
-				// retry 3 次
-				if retries.Retry >= 3 {
-					log.Printf("訊息id %s 已達重試上限\n", retries.NotifyRecordID)
-					continue
-				}
-				done := make(chan error, 1)
-				go func(r *types.RetryPushMessageParams) {
-					time.Sleep(consts.RetryInterval)
-					done <- s.pushMessage(r.PushMessageParams)
-				}(retries)
-
-				select {
-				case err := <-done:
-					if err != nil {
-						retries.Retry += 1
-						log.Printf("retry push message channel operate error:%v\n, retry counts: %d", err, retries.Retry)
-						s.RetryNotifyMessage(retries)
-					}
-				case <-ctx.Done():
-					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-						retries.Retry += 1
-						log.Printf("retry push message channel operate timeout, retry counts: %d\n", retries.Retry)
-						s.RetryNotifyMessage(retries)
-					}
-				}
-				cancel()
-			}
+		for params := range s.pushNotifyChan {
+			s.pushNotifyChanHandler(params)
 		}
 	}()
 }
 
-// 供外部呼叫，寫入發送紀錄並排進推播訊息的channel
-func (s *LineBotService) PushNotifyMessage(params *types.PushMessageParams) error {
+func (s *LineBotService) pushNotifyChanHandler(params *types.PushMessageParams) {
+	// try 3 次
+	if params.Retry >= 3 {
+		log.Printf("訊息id %s 已達重試上限\n", params.NotifyRecordID)
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
 	defer cancel()
-	ID, err := s.notifyRecordRepo.InsertNotifyRecord(ctx, models.InsertNotifyRecord{
-		UserID: params.UserId,
-		Content: map[string]any{
-			"messages": utils.ToJson(params.Messages),
-		},
-		Status: false, // 第一次寫入十位
-		Retry:  0,
-	})
-	if err != nil {
-		log.Println("Push Notify Message insert record fail:", err)
-		return err
+	done := make(chan error, 1)
+
+	go func() {
+		if params.Retry > 0 {
+			time.Sleep(consts.RetryInterval)
+		}
+		done <- s.pushMessage(ctx, params)
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			log.Printf("push message channel operate error: %v, retry: %v\n", err, params.Retry)
+			s.PushNotifyMessage(params)
+		}
+	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			log.Println("push message channel operate timeout, retry: ", params.Retry)
+			s.PushNotifyMessage(params)
+		}
 	}
-	params.NotifyRecordID = ID
-	s.pushNotifyChan <- params
-	return nil
 }
 
-// 供外部呼叫，更新發送紀錄並排進重試發送訊息的channel
-func (s *LineBotService) RetryNotifyMessage(params *types.RetryPushMessageParams) {
-	s.retryNotifyChan <- params
+// 供外部呼叫，寫入發送紀錄並排進推播訊息的channel
+func (s *LineBotService) PushNotifyMessage(params *types.PushMessageParams) {
+	s.pushNotifyChan <- params
 }
 
 // 透過line bot client發送訊息
-func (s *LineBotService) pushMessage(params *types.PushMessageParams) error {
+func (s *LineBotService) pushMessage(ctx context.Context, params *types.PushMessageParams) error {
+	// 沒有訊息紀錄id，先寫入一筆並取回id
+	if utils.IsEmpty(params.NotifyRecordID) {
+		ID, err := s.notifyRecordRepo.InsertNotifyRecord(ctx, models.InsertNotifyRecord{
+			UserID: params.UserId,
+			Content: map[string]any{
+				"messages": utils.ToJson(params.Messages),
+			},
+			Status: false, // 第一次寫入失敗
+			Retry:  0,
+		})
+		params.NotifyRecordID = ID
+		if err != nil {
+			log.Println("寫入訊息紀錄失敗：", err)
+			return err
+		}
+	}
+
+	status := true
 	_, err := s.Client.PushMessage(params.UserId, params.Messages...).Do()
 	if err != nil {
-		log.Println("Line Bot發送訊息失敗：", err)
-		return err
+		status = false
+		params.Retry += 1
+		log.Printf("訊息id(%v)發送失敗：%v\n", params.NotifyRecordID, err)
+	} else {
+		log.Printf("訊息id(%v)發送成功\n", params.NotifyRecordID)
 	}
-	log.Println("line push message success")
-	return nil
+
+	// update紀錄失敗也不處理
+	updateErr := s.notifyRecordRepo.UpdateNotifyRecord(ctx, models.UpdateNotifyRecord{
+		ID:     params.NotifyRecordID,
+		UserID: params.UserId,
+		Status: status,
+		Retry:  params.Retry,
+	})
+	if updateErr != nil {
+		log.Printf("訊息id(%v)更新發送紀錄失敗：%v\n", params.NotifyRecordID, err)
+	}
+
+	return err
 }

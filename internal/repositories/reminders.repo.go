@@ -26,8 +26,6 @@ func NewRemindersRepository(db *mongo.Client) *RemindersRepository {
 
 func (r *RemindersRepository) InsertReminder(ctx context.Context, params models.InsertReminderParams) (err error) {
 	collection := r.db.Database("reminder-note").Collection("reminders")
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
 
 	doc := models.ReminderModel{
 		UserID:     params.UserID,
