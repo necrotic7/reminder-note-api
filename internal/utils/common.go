@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
+
+	"github.com/jinzhu/copier"
 )
 
 func ToJson(data any) string {
@@ -55,4 +57,14 @@ func IsEmpty(values ...any) bool {
 		}
 	}
 	return false
+}
+
+// 泛用 struct 轉換 function
+func StructConvert[T any](src any) (*T, error) {
+	var dst T
+	err := copier.Copy(&dst, src)
+	if err != nil {
+		return nil, err
+	}
+	return &dst, nil
 }

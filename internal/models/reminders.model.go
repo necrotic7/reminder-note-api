@@ -44,3 +44,12 @@ type InsertReminderParams struct {
 	Frequency  EnumRemindFrequency `bson:"frequency"`
 	RemindTime RemindTime          `bson:"remindTime"`
 }
+
+type UpdateReminderParams struct {
+	ID         string              `bson:"_id"`
+	UserID     string              `bson:"userId"`
+	Title      string              `bson:"title"`
+	Content    string              `bson:"content"`
+	Frequency  EnumRemindFrequency `bson:"frequency"`
+	RemindTime RemindTime          `bson:"remindTime"`
+}

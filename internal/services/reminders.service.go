@@ -25,7 +25,7 @@ func NewReminderService(reminderRepo *repositories.RemindersRepository, lineBotS
 	}
 }
 
-func (s *ReminderService) CreateReminderFlow(ctx context.Context, req types.ReqCreateReminderBody) (err error) {
+func (s *ReminderService) CreateReminderFlow(ctx context.Context, req *types.ReqCreateReminderBody) (err error) {
 	err = s.ValidationCreateReminderReq(req)
 	if err != nil {
 		log.Println("檢查創建 Reminder 參數失敗：", err)
@@ -38,7 +38,7 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req types.ReqC
 		Frequency:  req.Frequency,
 		RemindTime: models.RemindTime(req.RemindTime),
 	}
-	err = s.ReminderRepo.InsertReminder(ctx, params)
+	err = s.ReminderRepo.InsertReminder(ctx, &params)
 	if err != nil {
 		log.Println("創建 Reminder 失敗：", err)
 		return
@@ -46,7 +46,7 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req types.ReqC
 	return
 }
 
-func (s *ReminderService) ValidationCreateReminderReq(req types.ReqCreateReminderBody) (err error) {
+func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateReminderBody) (err error) {
 	switch req.Frequency {
 	case models.EnumRemindFrequencyOnce:
 		if utils.IsEmpty(req.RemindTime.Year, req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
@@ -137,4 +137,31 @@ func (s *ReminderService) ReminderScheduler(ctx context.Context) {
 			Messages: messages,
 		})
 	}
+}
+
+func (s *ReminderService) UpdateReminderFlow(ctx context.Context, req *types.ReqUpdateReminderBody) (err error) {
+	payload, err := utils.StructConvert[types.ReqCreateReminderBody](req)
+	if err != nil {
+		log.Println("update reminder struct convert fail:", err)
+		return
+	}
+	err = s.ValidationCreateReminderReq(payload)
+	if err != nil {
+		log.Println("檢查更新 Reminder 參數失敗：", err)
+		return
+	}
+	params := models.UpdateReminderParams{
+		ID:         req.ID,
+		UserID:     req.UserID,
+		Title:      req.Title,
+		Content:    req.Content,
+		Frequency:  req.Frequency,
+		RemindTime: models.RemindTime(req.RemindTime),
+	}
+	err = s.ReminderRepo.UpdateReminder(ctx, &params)
+	if err != nil {
+		log.Println("更新 Reminder 失敗：", err)
+		return
+	}
+	return
 }

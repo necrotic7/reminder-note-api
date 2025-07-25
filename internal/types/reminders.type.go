@@ -29,3 +29,12 @@ type SearchUserRemindersParams struct {
 	Page       *int
 	RemindTime RemindTimeBody
 }
+
+type ReqUpdateReminderBody struct {
+	ID         string                     `json:"id" binding:"required"`
+	UserID     string                     `json:"userId" binding:"required"`
+	Frequency  models.EnumRemindFrequency `json:"frequency" binding:"required"`
+	Title      string                     `json:"title" binding:"required"`
+	Content    string                     `json:"content"`
+	RemindTime RemindTimeBody             `json:"remindTime" binding:"required"`
+}

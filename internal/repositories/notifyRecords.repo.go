@@ -2,10 +2,12 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/zivwu/reminder-note-api/internal/models"
+	"github.com/zivwu/reminder-note-api/internal/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -48,6 +50,7 @@ func (r *NotifyRecordsRepository) UpdateNotifyRecord(ctx context.Context, params
 		log.Println("update notify records fail: ", err)
 		return err
 	}
+	fmt.Println(params.ID, utils.ToJson(objID))
 	filter := bson.M{
 		"_id":    objID,
 		"userId": params.UserID,

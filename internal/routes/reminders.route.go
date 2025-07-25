@@ -7,5 +7,6 @@ import (
 
 func RegisterRouterReminder(r *gin.RouterGroup, h *handlers.ReminderHandler) {
 	r.POST("", h.CreateReminder)
+	r.PUT("", h.UpdateReminder)
 	r.GET("", h.GetUserReminders)
 }

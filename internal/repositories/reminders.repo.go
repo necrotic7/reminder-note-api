@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -15,18 +16,18 @@ import (
 )
 
 type RemindersRepository struct {
-	db *mongo.Client
+	db         *mongo.Client
+	collection *mongo.Collection
 }
 
 func NewRemindersRepository(db *mongo.Client) *RemindersRepository {
 	return &RemindersRepository{
-		db: db,
+		db:         db,
+		collection: db.Database("reminder-note").Collection("reminders"),
 	}
 }
 
-func (r *RemindersRepository) InsertReminder(ctx context.Context, params models.InsertReminderParams) (err error) {
-	collection := r.db.Database("reminder-note").Collection("reminders")
-
+func (r *RemindersRepository) InsertReminder(ctx context.Context, params *models.InsertReminderParams) (err error) {
 	doc := models.ReminderModel{
 		UserID:     params.UserID,
 		Title:      params.Title,
@@ -37,7 +38,7 @@ func (r *RemindersRepository) InsertReminder(ctx context.Context, params models.
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
-	_, err = collection.InsertOne(ctx, doc)
+	_, err = r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		log.Println("insert reminder fail: ", err)
 		return err
@@ -45,8 +46,39 @@ func (r *RemindersRepository) InsertReminder(ctx context.Context, params models.
 	return
 }
 
+func (r *RemindersRepository) UpdateReminder(ctx context.Context, params *models.UpdateReminderParams) (err error) {
+	// 轉換 ID 為 ObjectID
+	fmt.Println(params.ID)
+	objID, err := bson.ObjectIDFromHex(params.ID)
+	if err != nil {
+		log.Println("update reminders fail: ", err)
+		return err
+	}
+
+	filter := bson.M{
+		"_id":    objID,
+		"userId": params.UserID,
+	}
+
+	doc := bson.M{
+		"$set": bson.M{
+			"updatedAt":  time.Now(),
+			"frequency":  params.Frequency,
+			"title":      params.Title,
+			"content":    params.Content,
+			"remindTime": params.RemindTime,
+		},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, filter, doc)
+	if err != nil {
+		log.Println("update reminder fail: ", err)
+		return
+	}
+	return
+}
+
 func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params types.ReqGetUserRemindersQuery) ([]models.ReminderModel, error) {
-	collection := r.db.Database("reminder-note").Collection("reminders")
 	filter := bson.M{}
 	if !utils.IsEmpty(params.UserId) {
 		filter["userId"] = params.UserId
@@ -68,7 +100,7 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 	options.SetSkip(int64(offset))
 	options.SetSort(bson.M{"createdAt": -1})
 
-	cursor, err := collection.Find(ctx, filter, options)
+	cursor, err := r.collection.Find(ctx, filter, options)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +115,6 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 }
 
 func (r *RemindersRepository) SearchReminderNotifications(ctx context.Context, remindTime models.RemindTime) ([]models.ReminderModel, error) {
-	collection := r.db.Database("reminder-note").Collection("reminders")
 
 	filter := bson.M{
 		"deleted": false,
@@ -130,7 +161,7 @@ func (r *RemindersRepository) SearchReminderNotifications(ctx context.Context, r
 		},
 	}
 
-	cursor, err := collection.Find(ctx, filter)
+	cursor, err := r.collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
