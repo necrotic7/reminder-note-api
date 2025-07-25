@@ -53,3 +53,8 @@ type UpdateReminderParams struct {
 	Frequency  EnumRemindFrequency `bson:"frequency"`
 	RemindTime RemindTime          `bson:"remindTime"`
 }
+
+type DeleteReminderParams struct {
+	ID     string `bson:"_id"`
+	UserID string `bson:"userId"`
+}

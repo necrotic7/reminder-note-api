@@ -87,3 +87,27 @@ func (h *ReminderHandler) UpdateReminder(c *gin.Context) {
 		Status: http.StatusOK,
 	})
 }
+
+func (h *ReminderHandler) DeleteReminder(c *gin.Context) {
+	var body types.ReqDeleteReminderBody
+	if err := c.ShouldBindJSON(&body); err != nil {
+		utils.Resp(c, utils.RespParams{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("invalid parameters:", err),
+		})
+		return
+	}
+
+	err := h.svc.DeleteReminderFlow(c.Request.Context(), &body)
+	if err != nil {
+		utils.Resp(c, utils.RespParams{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprint("fail: ", err),
+		})
+		return
+	}
+
+	utils.Resp(c, utils.RespParams{
+		Status: http.StatusOK,
+	})
+}

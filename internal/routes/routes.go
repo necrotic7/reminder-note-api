@@ -13,7 +13,7 @@ func RootRouter(
 ) *gin.Engine {
 	r := gin.Default()
 	RegisterRouterLineWebhook(r.Group("/line/webhook"), lineWebhookHandler)
-	RegisterRouterReminder(r.Group("/reminder"), reminderHandler)
+	RegisterRouterReminder(r.Group("/reminders"), reminderHandler)
 	return r
 }
 

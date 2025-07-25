@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -50,17 +49,25 @@ func (r *NotifyRecordsRepository) UpdateNotifyRecord(ctx context.Context, params
 		log.Println("update notify records fail: ", err)
 		return err
 	}
-	fmt.Println(params.ID, utils.ToJson(objID))
 	filter := bson.M{
 		"_id":    objID,
 		"userId": params.UserID,
 	}
+
+	updateParams := bson.M{
+		"updatedAt": time.Now(),
+	}
+
+	if !utils.IsEmpty(params.Status) {
+		updateParams["status"] = params.Status
+	}
+
+	if !utils.IsEmpty(params.Retry) {
+		updateParams["retry"] = params.Retry
+	}
+
 	doc := bson.M{
-		"$set": bson.M{
-			"updatedAt": time.Now(),
-			"status":    params.Status,
-			"retry":     params.Retry,
-		},
+		"$set": updateParams,
 	}
 
 	_, err = r.collection.UpdateOne(ctx, filter, doc)

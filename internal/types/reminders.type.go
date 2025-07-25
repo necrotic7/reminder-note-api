@@ -38,3 +38,8 @@ type ReqUpdateReminderBody struct {
 	Content    string                     `json:"content"`
 	RemindTime RemindTimeBody             `json:"remindTime" binding:"required"`
 }
+
+type ReqDeleteReminderBody struct {
+	ID     string `json:"id" binding:"required"`
+	UserID string `json:"userId" binding:"required"`
+}

@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -48,7 +47,6 @@ func (r *RemindersRepository) InsertReminder(ctx context.Context, params *models
 
 func (r *RemindersRepository) UpdateReminder(ctx context.Context, params *models.UpdateReminderParams) (err error) {
 	// 轉換 ID 為 ObjectID
-	fmt.Println(params.ID)
 	objID, err := bson.ObjectIDFromHex(params.ID)
 	if err != nil {
 		log.Println("update reminders fail: ", err)
@@ -60,19 +58,61 @@ func (r *RemindersRepository) UpdateReminder(ctx context.Context, params *models
 		"userId": params.UserID,
 	}
 
+	updateParams := bson.M{
+		"updatedAt": time.Now(),
+	}
+
+	if !utils.IsEmpty(params.Frequency) {
+		updateParams["frequency"] = params.Frequency
+	}
+
+	if !utils.IsEmpty(params.Title) {
+		updateParams["title"] = params.Title
+	}
+
+	if !utils.IsEmpty(params.Content) {
+		updateParams["content"] = params.Content
+	}
+
+	if !utils.IsEmpty(params.RemindTime) {
+		updateParams["remindTime"] = params.RemindTime
+	}
+
 	doc := bson.M{
-		"$set": bson.M{
-			"updatedAt":  time.Now(),
-			"frequency":  params.Frequency,
-			"title":      params.Title,
-			"content":    params.Content,
-			"remindTime": params.RemindTime,
-		},
+		"$set": updateParams,
 	}
 
 	_, err = r.collection.UpdateOne(ctx, filter, doc)
 	if err != nil {
 		log.Println("update reminder fail: ", err)
+		return
+	}
+	return
+}
+
+func (r *RemindersRepository) DeleteReminder(ctx context.Context, params *models.DeleteReminderParams) (err error) {
+	// 轉換 ID 為 ObjectID
+	objID, err := bson.ObjectIDFromHex(params.ID)
+	if err != nil {
+		log.Println("delete reminders fail: ", err)
+		return err
+	}
+
+	filter := bson.M{
+		"_id":    objID,
+		"userId": params.UserID,
+	}
+
+	doc := bson.M{
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+			"deleted":   true,
+		},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, filter, doc)
+	if err != nil {
+		log.Println("delete reminder fail: ", err)
 		return
 	}
 	return

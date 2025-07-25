@@ -165,3 +165,16 @@ func (s *ReminderService) UpdateReminderFlow(ctx context.Context, req *types.Req
 	}
 	return
 }
+
+func (s *ReminderService) DeleteReminderFlow(ctx context.Context, req *types.ReqDeleteReminderBody) (err error) {
+	params := models.DeleteReminderParams{
+		ID:     req.ID,
+		UserID: req.UserID,
+	}
+	err = s.ReminderRepo.DeleteReminder(ctx, &params)
+	if err != nil {
+		log.Println("刪除 Reminder 失敗：", err)
+		return
+	}
+	return
+}
