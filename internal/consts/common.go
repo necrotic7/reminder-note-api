@@ -2,6 +2,11 @@ package consts
 
 import "time"
 
+// db
+const (
+	DbName = "reminder-note"
+)
+
 // Default
 const (
 	PageSize      = 10

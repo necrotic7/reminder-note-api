@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/zivwu/reminder-note-api/internal/config"
+	"github.com/zivwu/reminder-note-api/internal/consts"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/fx"
 )
 
-func InitMongoDB(lc fx.Lifecycle) (*mongo.Client, error) {
+func InitMongoDB(lc fx.Lifecycle) (*mongo.Database, error) {
 	connectString := fmt.Sprintf(
 		"mongodb://%s:%s@%s:%s",
 		config.Env.DB.User,
@@ -39,7 +40,7 @@ func InitMongoDB(lc fx.Lifecycle) (*mongo.Client, error) {
 			return client.Disconnect(ctx)
 		},
 	})
-	return client, nil
+	return client.Database(consts.DbName), nil
 }
 
 var Module = fx.Module(

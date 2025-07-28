@@ -21,8 +21,8 @@ func NewReminderHandler(svc *services.ReminderService) *ReminderHandler {
 }
 
 func (h *ReminderHandler) CreateReminder(c *gin.Context) {
-	var req *types.ReqCreateReminderBody
-	if err := c.ShouldBindJSON(req); err != nil {
+	var req types.ReqCreateReminderBody
+	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Resp(c, utils.RespParams{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprint("invalid parameters:", err),
@@ -30,7 +30,7 @@ func (h *ReminderHandler) CreateReminder(c *gin.Context) {
 		return
 	}
 
-	err := h.svc.CreateReminderFlow(c.Request.Context(), req)
+	err := h.svc.CreateReminderFlow(c.Request.Context(), &req)
 	if err != nil {
 		utils.Resp(c, utils.RespParams{
 			Status:  http.StatusBadRequest,

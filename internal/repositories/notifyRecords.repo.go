@@ -12,14 +12,14 @@ import (
 )
 
 type NotifyRecordsRepository struct {
-	db         *mongo.Client
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewNotifyRecordsRepository(db *mongo.Client) *NotifyRecordsRepository {
+func NewNotifyRecordsRepository(db *mongo.Database) *NotifyRecordsRepository {
 	return &NotifyRecordsRepository{
 		db:         db,
-		collection: db.Database("reminder-note").Collection("notify_records"),
+		collection: db.Collection("notify_records"),
 	}
 }
 

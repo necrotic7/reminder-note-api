@@ -15,8 +15,8 @@ type RemindTimeBody struct {
 	Month   *int `json:"month"`
 	Date    *int `json:"date"`
 	Weekday *int `json:"weekday"`
-	Hour    *int `json:"hour"`
-	Minute  *int `json:"minute"`
+	Hour    *int `json:"hour" binding:"required"`
+	Minute  *int `json:"minute" binding:"required"`
 }
 
 type ReqGetUserRemindersQuery struct {

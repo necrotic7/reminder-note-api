@@ -15,14 +15,14 @@ import (
 )
 
 type RemindersRepository struct {
-	db         *mongo.Client
+	db         *mongo.Database
 	collection *mongo.Collection
 }
 
-func NewRemindersRepository(db *mongo.Client) *RemindersRepository {
+func NewRemindersRepository(db *mongo.Database) *RemindersRepository {
 	return &RemindersRepository{
 		db:         db,
-		collection: db.Database("reminder-note").Collection("reminders"),
+		collection: db.Collection("reminders"),
 	}
 }
 
@@ -157,8 +157,7 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 func (r *RemindersRepository) SearchReminderNotifications(ctx context.Context, remindTime models.RemindTime) ([]models.ReminderModel, error) {
 
 	filter := bson.M{
-		"deleted": false,
-		// Daily
+		"deleted":           false,
 		"remindTime.hour":   *remindTime.Hour,
 		"remindTime.minute": *remindTime.Minute,
 		"$expr": bson.M{
@@ -172,6 +171,11 @@ func (r *RemindersRepository) SearchReminderNotifications(ctx context.Context, r
 							bson.M{"$eq": bson.A{"$remindTime.month", *remindTime.Month}},
 							bson.M{"$eq": bson.A{"$remindTime.date", *remindTime.Date}},
 						}},
+					},
+					// Daily
+					bson.M{
+						"case": bson.M{"$eq": bson.A{"$frequency", models.EnumRemindFrequencyDaily}},
+						"then": true,
 					},
 					// Weekly
 					bson.M{
