@@ -1,13 +1,16 @@
 package config
 
 import (
+	"log"
+	"strings"
+
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
-	"log"
 )
 
 type EnvConfig struct {
-	Line struct {
+	AllowOrigins []string
+	Line         struct {
 		ChannelSecret      string
 		ChannelAccessToken string
 	}
@@ -31,6 +34,8 @@ func InitConfig() EnvConfig {
 	// 設定預設值 or 讀環境變數
 	viper.AutomaticEnv() // 自動從系統環境變數讀
 
+	Env.AllowOrigins = GetStringSlice("ALLOW_ORIGINS", ",")
+
 	Env.Line.ChannelSecret = viper.GetString("LINE_CHANNEL_SECRET")
 	Env.Line.ChannelAccessToken = viper.GetString("LINE_CHANNEL_ACCESS_TOKEN")
 
@@ -42,4 +47,8 @@ func InitConfig() EnvConfig {
 	log.Println("init config success")
 
 	return Env
+}
+
+func GetStringSlice(key string, sep string) []string {
+	return strings.Split(viper.GetString(key), sep)
 }

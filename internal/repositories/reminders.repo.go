@@ -124,6 +124,18 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 		filter["userId"] = params.UserId
 	}
 
+	if !utils.IsEmpty(params.StartTime) {
+		filter["createdAt"] = bson.M{
+			"$gt": time.Unix(params.StartTime, 0),
+		}
+	}
+
+	if !utils.IsEmpty(params.EndTime) {
+		filter["createdAt"] = bson.M{
+			"$lt": time.Unix(params.EndTime, 0),
+		}
+	}
+
 	filter["deleted"] = false
 
 	page := 1
@@ -131,9 +143,6 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 		page = *params.Page
 	}
 	options := options.Find()
-	if params.Page == nil {
-		*params.Page = 1
-	}
 
 	offset := (page - 1) * consts.PageSize
 	options.SetLimit(int64(consts.PageSize))

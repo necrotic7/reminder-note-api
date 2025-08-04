@@ -20,8 +20,10 @@ type RemindTimeBody struct {
 }
 
 type ReqGetUserRemindersQuery struct {
-	UserId string `form:"userId" binding:"required"`
-	Page   *int   `form:"page"`
+	UserId    string `form:"userId" binding:"required"`
+	Page      *int   `form:"page"`
+	StartTime int64  `form:"startTime"`
+	EndTime   int64  `form:"endTime"`
 }
 
 type SearchUserRemindersParams struct {
