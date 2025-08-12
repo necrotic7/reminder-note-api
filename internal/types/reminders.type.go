@@ -20,16 +20,23 @@ type RemindTimeBody struct {
 }
 
 type ReqGetUserRemindersQuery struct {
-	UserId    string `form:"userId" binding:"required"`
-	Page      *int   `form:"page"`
-	StartTime int64  `form:"startTime"`
-	EndTime   int64  `form:"endTime"`
+	UserId          string                     `form:"userId" binding:"required"`
+	Page            *int                       `form:"page"`
+	CreateStartTime int64                      `form:"createStartTime"`
+	CreateEndTime   int64                      `form:"createEndTime"`
+	Title           string                     `form:"title"`
+	Content         string                     `form:"content"`
+	Frequency       models.EnumRemindFrequency `form:"frequency"`
 }
 
 type SearchUserRemindersParams struct {
-	UserId     string
-	Page       *int
-	RemindTime RemindTimeBody
+	UserId          string
+	Page            *int
+	CreateStartTime int64
+	CreateEndTime   int64
+	Title           string
+	Content         string
+	Frequency       models.EnumRemindFrequency
 }
 
 type ReqUpdateReminderBody struct {

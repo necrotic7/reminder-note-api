@@ -118,22 +118,27 @@ func (r *RemindersRepository) DeleteReminder(ctx context.Context, params *models
 	return
 }
 
-func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params types.ReqGetUserRemindersQuery) ([]models.ReminderModel, error) {
+func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params types.SearchUserRemindersParams) ([]models.ReminderModel, error) {
 	filter := bson.M{}
+	// TODO 搜尋提醒時間
 	if !utils.IsEmpty(params.UserId) {
 		filter["userId"] = params.UserId
 	}
 
-	if !utils.IsEmpty(params.StartTime) {
+	if !utils.IsEmpty(params.CreateStartTime) {
 		filter["createdAt"] = bson.M{
-			"$gt": time.Unix(params.StartTime, 0),
+			"$gt": time.Unix(params.CreateStartTime, 0),
 		}
 	}
 
-	if !utils.IsEmpty(params.EndTime) {
+	if !utils.IsEmpty(params.CreateEndTime) {
 		filter["createdAt"] = bson.M{
-			"$lt": time.Unix(params.EndTime, 0),
+			"$lt": time.Unix(params.CreateEndTime, 0),
 		}
+	}
+
+	if !utils.IsEmpty(params.Frequency) {
+		filter["frequency"] = params.Frequency
 	}
 
 	filter["deleted"] = false

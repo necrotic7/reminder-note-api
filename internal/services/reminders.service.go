@@ -53,9 +53,6 @@ func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateRemind
 		if utils.IsEmpty(req.RemindTime.Year, req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入年/月/日/時/分")
 		}
-		if *req.RemindTime.Year < time.Now().Year() {
-			return fmt.Errorf("新創建的年份(%v)不可小於今年年份(%v)", *req.RemindTime.Year, time.Now().Year())
-		}
 	case models.EnumRemindFrequencyDaily:
 		if utils.IsEmpty(req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入時/分")
@@ -89,9 +86,13 @@ func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateRemind
 	}
 
 	timeString := fmt.Sprintf("%d-%d-%d %d:%d:00", *req.RemindTime.Year, *req.RemindTime.Month, *req.RemindTime.Date, *req.RemindTime.Hour, *req.RemindTime.Minute)
-	_, err = time.Parse("2006-1-2 15:4:5", timeString)
+	resultTime, err := time.Parse("2006-1-2 15:4:5", timeString)
 	if err != nil {
 		return fmt.Errorf("time.Parse失敗：%w", err)
+	}
+
+	if req.Frequency == models.EnumRemindFrequencyOnce && resultTime.Before(time.Now()) {
+		return fmt.Errorf("創建單次提醒時，提醒時間不可小於現在")
 	}
 
 	return
@@ -101,7 +102,8 @@ func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGet
 	if utils.IsEmpty(req.UserId) {
 		return nil, fmt.Errorf("missing userId")
 	}
-	result, err := s.ReminderRepo.SearchUserReminders(ctx, req)
+
+	result, err := s.ReminderRepo.SearchUserReminders(ctx, types.SearchUserRemindersParams(req))
 	if err != nil {
 		return nil, fmt.Errorf("search User Reminders fail: %w", err)
 	}
