@@ -98,16 +98,18 @@ func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateRemind
 	return
 }
 
-func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGetUserRemindersQuery) ([]models.ReminderModel, error) {
+func (s *ReminderService) GetUserReminders(ctx context.Context, req types.ReqGetUserRemindersQuery) (resp types.RespGetUserRemindersBody, err error) {
 	if utils.IsEmpty(req.UserId) {
-		return nil, fmt.Errorf("missing userId")
+		return resp, fmt.Errorf("missing userId")
 	}
 
-	result, err := s.ReminderRepo.SearchUserReminders(ctx, types.SearchUserRemindersParams(req))
+	result, counts, err := s.ReminderRepo.SearchUserReminders(ctx, types.SearchUserRemindersParams(req))
 	if err != nil {
-		return nil, fmt.Errorf("search User Reminders fail: %w", err)
+		return resp, fmt.Errorf("search User Reminders fail: %w", err)
 	}
-	return result, nil
+	resp.Counts = counts
+	resp.Records = result
+	return
 }
 
 func (s *ReminderService) ReminderScheduler(ctx context.Context) {

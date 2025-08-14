@@ -118,7 +118,7 @@ func (r *RemindersRepository) DeleteReminder(ctx context.Context, params *models
 	return
 }
 
-func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params types.SearchUserRemindersParams) ([]models.ReminderModel, error) {
+func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params types.SearchUserRemindersParams) ([]models.ReminderModel, int64, error) {
 	filter := bson.M{}
 	// TODO 搜尋提醒時間
 	if !utils.IsEmpty(params.UserId) {
@@ -141,31 +141,53 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 		filter["frequency"] = params.Frequency
 	}
 
+	if !utils.IsEmpty((params.Title)) {
+		filter["title"] = bson.M{
+			"$regex": params.Title,
+		}
+	}
+
+	if !utils.IsEmpty((params.Content)) {
+		filter["content"] = bson.M{
+			"$regex": params.Content,
+		}
+	}
+
 	filter["deleted"] = false
+
+	counts, err := r.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	page := 1
 	if params.Page != nil {
 		page = *params.Page
 	}
+
+	pageSize := consts.PageSize
+	if params.PageSize != nil {
+		pageSize = *params.PageSize
+	}
 	options := options.Find()
 
-	offset := (page - 1) * consts.PageSize
-	options.SetLimit(int64(consts.PageSize))
+	offset := (page - 1) * pageSize
+	options.SetLimit(int64(pageSize))
 	options.SetSkip(int64(offset))
 	options.SetSort(bson.M{"createdAt": -1})
 
 	cursor, err := r.collection.Find(ctx, filter, options)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
 	var results []models.ReminderModel
 	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return results, nil
+	return results, counts, nil
 }
 
 func (r *RemindersRepository) SearchReminderNotifications(ctx context.Context, remindTime models.RemindTime) ([]models.ReminderModel, error) {

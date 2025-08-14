@@ -22,6 +22,7 @@ type RemindTimeBody struct {
 type ReqGetUserRemindersQuery struct {
 	UserId          string                     `form:"userId" binding:"required"`
 	Page            *int                       `form:"page"`
+	PageSize        *int                       `form:"pageSize"`
 	CreateStartTime int64                      `form:"createStartTime"`
 	CreateEndTime   int64                      `form:"createEndTime"`
 	Title           string                     `form:"title"`
@@ -29,9 +30,15 @@ type ReqGetUserRemindersQuery struct {
 	Frequency       models.EnumRemindFrequency `form:"frequency"`
 }
 
+type RespGetUserRemindersBody struct {
+	Counts  int64                  `json:"counts"`
+	Records []models.ReminderModel `json:"records"`
+}
+
 type SearchUserRemindersParams struct {
 	UserId          string
 	Page            *int
+	PageSize        *int
 	CreateStartTime int64
 	CreateEndTime   int64
 	Title           string
