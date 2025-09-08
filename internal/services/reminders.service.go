@@ -48,18 +48,20 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req *types.Req
 
 func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateReminderBody) (err error) {
 	now := time.Now()
+	timeString := ""
 	switch req.Frequency {
 	case models.EnumRemindFrequencyOnce:
 		if utils.IsEmpty(req.RemindTime.Year, req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入年/月/日/時/分")
 		}
+		timeString = fmt.Sprintf("%d-%d-%d %d:%d:00", *req.RemindTime.Year, *req.RemindTime.Month, *req.RemindTime.Date, *req.RemindTime.Hour, *req.RemindTime.Minute)
+
 	case models.EnumRemindFrequencyDaily:
 		if utils.IsEmpty(req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入時/分")
 		}
-		*req.RemindTime.Year = now.Year()
-		*req.RemindTime.Month = int(now.Month())
-		*req.RemindTime.Date = now.Day()
+		timeString = fmt.Sprintf("%d-%d-%d %d:%d:00", now.Year(), int(now.Month()), now.Day(), *req.RemindTime.Hour, *req.RemindTime.Minute)
+
 	case models.EnumRemindFrequencyWeekly:
 		if utils.IsEmpty(req.RemindTime.Weekday, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入星期/時/分")
@@ -67,32 +69,31 @@ func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateRemind
 		if *req.RemindTime.Weekday < 0 || *req.RemindTime.Weekday > 6 {
 			return fmt.Errorf("輸入的星期不合法：%d", *req.RemindTime.Weekday)
 		}
-		*req.RemindTime.Year = now.Year()
-		*req.RemindTime.Month = int(now.Month())
-		*req.RemindTime.Date = now.Day()
+		timeString = fmt.Sprintf("%d-%d-%d %d:%d:00", now.Year(), int(now.Month()), now.Day(), *req.RemindTime.Hour, *req.RemindTime.Minute)
+
 	case models.EnumRemindFrequencyMonthly:
 		if utils.IsEmpty(req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入日/時/分")
 		}
-		*req.RemindTime.Year = now.Year()
-		*req.RemindTime.Month = int(now.Month())
+		timeString = fmt.Sprintf("%d-%d-%d %d:%d:00", now.Year(), int(now.Month()), *req.RemindTime.Date, *req.RemindTime.Hour, *req.RemindTime.Minute)
+
 	case models.EnumRemindFrequencyAnnually:
 		if utils.IsEmpty(req.RemindTime.Month, req.RemindTime.Date, req.RemindTime.Hour, req.RemindTime.Minute) {
 			return fmt.Errorf("輸入時間不合法，需輸入月/日/時/分")
 		}
-		*req.RemindTime.Year = now.Year()
+		timeString = fmt.Sprintf("%d-%d-%d %d:%d:00", now.Year(), *req.RemindTime.Month, *req.RemindTime.Date, *req.RemindTime.Hour, *req.RemindTime.Minute)
+
 	default:
 		return fmt.Errorf("不合法的 Reminder Frequency: %s", req.Frequency)
 	}
 
-	timeString := fmt.Sprintf("%d-%d-%d %d:%d:00", *req.RemindTime.Year, *req.RemindTime.Month, *req.RemindTime.Date, *req.RemindTime.Hour, *req.RemindTime.Minute)
 	resultTime, err := time.Parse("2006-1-2 15:4:5", timeString)
 	if err != nil {
 		return fmt.Errorf("time.Parse失敗：%w", err)
 	}
 
 	if req.Frequency == models.EnumRemindFrequencyOnce && resultTime.Before(time.Now()) {
-		return fmt.Errorf("創建單次提醒時，提醒時間不可小於現在")
+		return fmt.Errorf("創建單次提醒時，提醒時間(%s)不可小於現在", resultTime.String())
 	}
 
 	return

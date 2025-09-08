@@ -126,15 +126,19 @@ func (r *RemindersRepository) SearchUserReminders(ctx context.Context, params ty
 	}
 
 	if !utils.IsEmpty(params.CreateStartTime) {
-		filter["createdAt"] = bson.M{
-			"$gt": time.Unix(params.CreateStartTime, 0),
+		if utils.IsEmpty(filter["createdAt"]) {
+			filter["createdAt"] = bson.M{}
 		}
+		filter["createdAt"].(bson.M)["$gte"] = time.Unix(*params.CreateStartTime, 0)
+
 	}
 
 	if !utils.IsEmpty(params.CreateEndTime) {
-		filter["createdAt"] = bson.M{
-			"$lt": time.Unix(params.CreateEndTime, 0),
+		if utils.IsEmpty(filter["createdAt"]) {
+			filter["createdAt"] = bson.M{}
 		}
+		filter["createdAt"].(bson.M)["$lte"] = time.Unix(*params.CreateEndTime, 0)
+
 	}
 
 	if !utils.IsEmpty(params.Frequency) {

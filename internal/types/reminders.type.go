@@ -23,8 +23,8 @@ type ReqGetUserRemindersQuery struct {
 	UserId          string                     `form:"userId" binding:"required"`
 	Page            *int                       `form:"page"`
 	PageSize        *int                       `form:"pageSize"`
-	CreateStartTime int64                      `form:"createStartTime"`
-	CreateEndTime   int64                      `form:"createEndTime"`
+	CreateStartTime *int64                     `form:"createStartTime"`
+	CreateEndTime   *int64                     `form:"createEndTime"`
 	Title           string                     `form:"title"`
 	Content         string                     `form:"content"`
 	Frequency       models.EnumRemindFrequency `form:"frequency"`
@@ -39,8 +39,8 @@ type SearchUserRemindersParams struct {
 	UserId          string
 	Page            *int
 	PageSize        *int
-	CreateStartTime int64
-	CreateEndTime   int64
+	CreateStartTime *int64
+	CreateEndTime   *int64
 	Title           string
 	Content         string
 	Frequency       models.EnumRemindFrequency
