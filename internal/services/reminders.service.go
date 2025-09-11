@@ -87,11 +87,11 @@ func (s *ReminderService) ValidationCreateReminderReq(req *types.ReqCreateRemind
 		return fmt.Errorf("不合法的 Reminder Frequency: %s", req.Frequency)
 	}
 
-	resultTime, err := time.Parse("2006-1-2 15:4:5", timeString)
+	loc, _ := time.LoadLocation("Asia/Taipei")
+	resultTime, err := time.ParseInLocation("2006-1-2 15:4:5", timeString, loc)
 	if err != nil {
 		return fmt.Errorf("time.Parse失敗：%w", err)
 	}
-
 	if req.Frequency == models.EnumRemindFrequencyOnce && resultTime.Before(time.Now()) {
 		return fmt.Errorf("創建單次提醒時，提醒時間(%s)不可小於現在", resultTime.String())
 	}
