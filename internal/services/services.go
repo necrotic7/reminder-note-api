@@ -14,6 +14,7 @@ var Module = fx.Module(
 		NewLineBotService,
 		NewLineWebhookService,
 		NewReminderService,
+		NewUsersService,
 	),
 	fx.Invoke(func(lc fx.Lifecycle, s *ScheduleService) {
 		lc.Append(fx.Hook{

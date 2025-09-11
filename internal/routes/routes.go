@@ -14,6 +14,7 @@ import (
 func RootRouter(
 	lineWebhookHandler *handlers.LineWebhookHandler,
 	reminderHandler *handlers.ReminderHandler,
+	usersHandler *handlers.UsersHandler,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
@@ -27,6 +28,7 @@ func RootRouter(
 
 	RegisterRouterLineWebhook(r.Group("/line/webhook"), lineWebhookHandler)
 	RegisterRouterReminder(r.Group("/reminders"), reminderHandler)
+	RegisterRouterUsers(r.Group("/users"), usersHandler)
 	return r
 }
 

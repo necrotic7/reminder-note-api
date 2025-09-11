@@ -7,5 +7,6 @@ var Module = fx.Module(
 	fx.Provide(
 		NewLineWebhookHandler,
 		NewReminderHandler,
+		NewUsersHandler,
 	),
 )
