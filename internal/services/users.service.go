@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,11 @@ func NewUsersService(repo *repositories.UsersRepository) *UsersService {
 }
 
 func (s *UsersService) Login(ctx context.Context, req *types.ReqLoginBody) (result gin.H, err error) {
+	if len(req.LineID) < 1 {
+		err = fmt.Errorf("missing line id")
+		return
+	}
+
 	userId, err := s.repo.UpsertUser(ctx, req.LineID, req.Name)
 	if err != nil {
 		log.Println("登入失敗：", err)
