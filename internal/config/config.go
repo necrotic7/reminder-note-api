@@ -10,6 +10,7 @@ import (
 
 type EnvConfig struct {
 	AllowOrigins []string
+	SecretKey    string
 	Line         struct {
 		ChannelSecret      string
 		ChannelAccessToken string
@@ -35,6 +36,8 @@ func InitConfig() EnvConfig {
 	viper.AutomaticEnv() // 自動從系統環境變數讀
 
 	Env.AllowOrigins = GetStringSlice("ALLOW_ORIGINS", ",")
+
+	Env.SecretKey = viper.GetString("SECRET_KEY")
 
 	Env.Line.ChannelSecret = viper.GetString("LINE_CHANNEL_SECRET")
 	Env.Line.ChannelAccessToken = viper.GetString("LINE_CHANNEL_ACCESS_TOKEN")

@@ -6,8 +6,10 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
+	"github.com/zivwu/reminder-note-api/internal/utils"
 )
 
 type UsersService struct {
@@ -26,13 +28,22 @@ func (s *UsersService) Login(ctx context.Context, req *types.ReqLoginBody) (resu
 		return
 	}
 
-	userId, err := s.repo.UpsertUser(ctx, req.LineID, req.Name)
+	user, err := s.repo.UpsertUser(ctx, req.LineID, req.Name)
 	if err != nil {
 		log.Println("登入失敗：", err)
 		return
 	}
+	// 產生token
+	token, err := utils.GenToken(jwt.MapClaims{
+		"userId": user.ID.Hex(),
+		"name":   user.Name,
+	})
+	if err != nil {
+		log.Println("產生token失敗：", err)
+		return
+	}
 	result = gin.H{
-		"userId": userId,
+		"token": token,
 	}
 	return
 }

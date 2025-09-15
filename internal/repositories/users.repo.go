@@ -24,21 +24,21 @@ func NewUsersRepository(db *mongo.Database) *UsersRepository {
 	}
 }
 
-func (u *UsersRepository) UpsertUser(ctx context.Context, lineId string, name string) (string, error) {
+func (u *UsersRepository) UpsertUser(ctx context.Context, lineId string, name string) (*models.UserModel, error) {
 	filter := bson.M{
 		"lineId":  lineId,
 		"deleted": false,
 	}
 
-	var result models.UserModel
-	err := u.collection.FindOne(ctx, filter).Decode(&result)
+	var result *models.UserModel
 
-	if err != nil && err != mongo.ErrNoDocuments {
-		log.Println("find user error:", err)
-		return "", err
+	exist := u.collection.FindOne(ctx, filter)
+	if exist.Err() != nil && exist.Err() != mongo.ErrNoDocuments {
+		log.Println("find user error:", exist.Err())
+		return nil, exist.Err()
 	}
 
-	if err == mongo.ErrNoDocuments {
+	if exist.Err() == mongo.ErrNoDocuments {
 		// 建立內容
 		insertParams := models.UserModel{
 			LineID:      lineId,
@@ -48,17 +48,26 @@ func (u *UsersRepository) UpsertUser(ctx context.Context, lineId string, name st
 			UpdatedAt:   time.Now(),
 			LastLoginAt: time.Now(),
 		}
-		inserted, err := u.collection.InsertOne(ctx, insertParams)
+		insertResult, err := u.collection.InsertOne(ctx, insertParams)
 		if err != nil {
 			log.Println("insert user fail:", err)
-			return "", err
-		}
-		ID, ok := inserted.InsertedID.(bson.ObjectID)
-		if !ok {
-			return "", fmt.Errorf("parse inserted id failed")
+			return nil, err
 		}
 
-		return ID.Hex(), nil
+		ID, ok := insertResult.InsertedID.(bson.ObjectID)
+		if !ok {
+			return nil, fmt.Errorf("parse inserted id failed")
+		}
+
+		err = u.collection.FindOne(ctx, bson.M{
+			"id": ID.Hex(),
+		}).Decode(&result)
+
+		if err != nil {
+			return nil, fmt.Errorf("find user after insert fail: %w ", err)
+		}
+
+		return result, nil
 	} else {
 
 		// 更新內容
@@ -73,12 +82,12 @@ func (u *UsersRepository) UpsertUser(ctx context.Context, lineId string, name st
 
 		opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-		err = u.collection.FindOneAndUpdate(ctx, filter, doc, opts).Decode(&result)
+		err := u.collection.FindOneAndUpdate(ctx, filter, doc, opts).Decode(&result)
 		if err != nil {
 			log.Println("update user fail:", err)
-			return "", err
+			return nil, err
 		}
 
-		return result.ID.Hex(), err
+		return result, nil
 	}
 }

@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jinzhu/copier"
+	"github.com/zivwu/reminder-note-api/internal/config"
+	"github.com/zivwu/reminder-note-api/internal/consts"
 )
 
 func ToJson(data any) string {
@@ -67,4 +71,21 @@ func StructConvert[T any](src any) (*T, error) {
 		return nil, err
 	}
 	return &dst, nil
+}
+
+func GenToken(claims jwt.MapClaims) (string, error) {
+	// 產生token
+	claims["exp"] = time.Now().Add(consts.TokenExpireTime).Unix() // 過期時間
+	claims["iat"] = time.Now().Unix()                             // 發行時間
+
+	// 建立 token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// 簽名
+	signedToken, err := token.SignedString([]byte(config.Env.SecretKey))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
 }
