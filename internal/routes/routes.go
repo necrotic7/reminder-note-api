@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zivwu/reminder-note-api/internal/config"
 	"github.com/zivwu/reminder-note-api/internal/handlers"
+	"github.com/zivwu/reminder-note-api/internal/middleware"
 	"go.uber.org/fx"
 )
 
@@ -25,6 +26,8 @@ func RootRouter(
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	r.Use(middleware.AuthMiddleware())
 
 	RegisterRouterLineWebhook(r.Group("/line/webhook"), lineWebhookHandler)
 	RegisterRouterReminder(r.Group("/reminders"), reminderHandler)

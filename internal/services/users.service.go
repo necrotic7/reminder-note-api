@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/types"
 	"github.com/zivwu/reminder-note-api/internal/utils"
@@ -34,9 +33,9 @@ func (s *UsersService) Login(ctx context.Context, req *types.ReqLoginBody) (resu
 		return
 	}
 	// 產生token
-	token, err := utils.GenToken(jwt.MapClaims{
-		"userId": user.ID.Hex(),
-		"name":   user.Name,
+	token, err := utils.GenToken(utils.TokenClaims{
+		UserID: user.ID.Hex(),
+		Name:   user.Name,
 	})
 	if err != nil {
 		log.Println("產生token失敗：", err)
