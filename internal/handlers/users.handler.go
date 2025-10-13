@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/services"
 	"github.com/zivwu/reminder-note-api/internal/types"
 	"github.com/zivwu/reminder-note-api/internal/utils"
@@ -14,9 +15,9 @@ type UsersHandler struct {
 	svc *services.UsersService
 }
 
-func NewUsersHandler(svc *services.UsersService) *UsersHandler {
+func NewUsersHandler(repo *repositories.UsersRepository) *UsersHandler {
 	return &UsersHandler{
-		svc: svc,
+		svc: services.NewUsersService(repo),
 	}
 }
 

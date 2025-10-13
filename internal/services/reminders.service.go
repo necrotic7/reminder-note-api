@@ -14,6 +14,7 @@ import (
 )
 
 type ReminderService struct {
+	BaseService
 	ReminderRepo   *repositories.RemindersRepository
 	LineBotService *LineBotService
 }

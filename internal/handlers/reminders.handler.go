@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zivwu/reminder-note-api/internal/repositories"
 	"github.com/zivwu/reminder-note-api/internal/services"
 	"github.com/zivwu/reminder-note-api/internal/types"
 	"github.com/zivwu/reminder-note-api/internal/utils"
@@ -14,23 +15,22 @@ type ReminderHandler struct {
 	svc *services.ReminderService
 }
 
-func NewReminderHandler(svc *services.ReminderService) *ReminderHandler {
+func NewReminderHandler(reminderRepo *repositories.RemindersRepository, lineBotService *services.LineBotService) *ReminderHandler {
 	return &ReminderHandler{
-		svc: svc,
+		svc: services.NewReminderService(reminderRepo, lineBotService),
 	}
 }
 
 func (h *ReminderHandler) CreateReminder(c *gin.Context) {
+	h.svc.SetTokenInfo(c)
 	var req types.ReqCreateReminderBody
 	if err := c.ShouldBindJSON(&req); err != nil {
-		fmt.Println(utils.ToJson(req), err)
 		utils.Resp(c, utils.RespParams{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprint("invalid parameters:", err),
 		})
 		return
 	}
-	fmt.Println(utils.ToJson(req))
 
 	err := h.svc.CreateReminderFlow(c.Request.Context(), &req)
 	if err != nil {
@@ -44,6 +44,8 @@ func (h *ReminderHandler) CreateReminder(c *gin.Context) {
 }
 
 func (h *ReminderHandler) GetUserReminders(c *gin.Context) {
+	h.svc.SetTokenInfo(c)
+
 	var query types.ReqGetUserRemindersQuery
 	if err := c.BindQuery(&query); err != nil {
 		utils.Resp(c, utils.RespParams{
@@ -68,6 +70,8 @@ func (h *ReminderHandler) GetUserReminders(c *gin.Context) {
 }
 
 func (h *ReminderHandler) UpdateReminder(c *gin.Context) {
+	h.svc.SetTokenInfo(c)
+
 	var body types.ReqUpdateReminderBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Resp(c, utils.RespParams{
@@ -91,6 +95,7 @@ func (h *ReminderHandler) UpdateReminder(c *gin.Context) {
 }
 
 func (h *ReminderHandler) DeleteReminder(c *gin.Context) {
+	h.svc.SetTokenInfo(c)
 	var body types.ReqDeleteReminderBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Resp(c, utils.RespParams{

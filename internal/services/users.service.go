@@ -12,6 +12,7 @@ import (
 )
 
 type UsersService struct {
+	BaseService
 	repo *repositories.UsersRepository
 }
 

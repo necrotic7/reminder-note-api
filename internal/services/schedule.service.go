@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+	"github.com/zivwu/reminder-note-api/internal/repositories"
 )
 
 type ScheduleService struct {
@@ -13,11 +14,11 @@ type ScheduleService struct {
 	reminderService *ReminderService
 }
 
-func NewScheduleService(reminderService *ReminderService) *ScheduleService {
+func NewScheduleService(reminderRepo *repositories.RemindersRepository, lineBotService *LineBotService) *ScheduleService {
 	c := cron.New(cron.WithSeconds())
 	s := ScheduleService{
 		cron:            c,
-		reminderService: reminderService,
+		reminderService: NewReminderService(reminderRepo, lineBotService),
 	}
 	return &s
 }
