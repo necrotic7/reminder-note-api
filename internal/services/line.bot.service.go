@@ -40,7 +40,7 @@ func NewLineBotService(notifyRecordRepo *repositories.NotifyRecordsRepository) *
 
 // 主流程
 func (s *LineBotService) Start() {
-	for i := 0; i < consts.MessageWorker; i++ {
+	for range consts.MessageWorker {
 		go func() {
 			for params := range s.pushNotifyChan {
 				s.pushNotifyChanHandler(params)
