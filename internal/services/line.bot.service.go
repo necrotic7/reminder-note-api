@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"log"
 	"time"
 
@@ -41,41 +40,37 @@ func NewLineBotService(notifyRecordRepo *repositories.NotifyRecordsRepository) *
 
 // 主流程
 func (s *LineBotService) Start() {
-	go func() {
-		for params := range s.pushNotifyChan {
-			s.pushNotifyChanHandler(params)
-		}
-	}()
+	for i := 0; i < consts.MessageWorker; i++ {
+		go func() {
+			for params := range s.pushNotifyChan {
+				s.pushNotifyChanHandler(params)
+			}
+		}()
+	}
 }
 
 func (s *LineBotService) pushNotifyChanHandler(params *types.PushMessageParams) {
-	// try 3 次
 	if params.Retry >= 3 {
 		log.Printf("訊息id %s 已達重試上限\n", params.NotifyRecordID)
 		return
 	}
+
+	// 在這裡處理等待，不要進 pushMessage 才 sleep，保持 pushMessage 純粹
+	if params.Retry > 0 {
+		time.Sleep(consts.RetryInterval)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), consts.Timeout)
 	defer cancel()
-	done := make(chan error, 1)
 
-	go func() {
-		if params.Retry > 0 {
-			time.Sleep(consts.RetryInterval)
-		}
-		done <- s.pushMessage(ctx, params)
-	}()
+	// 不需要再額外開 go func，因為 Start 已經是在背景執行 handler 了
+	// 這樣可以避免 context 提前失效與 goroutine 洩漏
+	err := s.pushMessage(ctx, params)
 
-	select {
-	case err := <-done:
-		if err != nil {
-			log.Printf("push message channel operate error: %v, retry: %v\n", err, params.Retry)
-			s.PushNotifyMessage(params)
-		}
-	case <-ctx.Done():
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			log.Println("push message channel operate timeout, retry: ", params.Retry)
-			s.PushNotifyMessage(params)
-		}
+	if err != nil {
+		log.Printf("發送失敗，準備重試: %v, 目前重試次數: %d\n", err, params.Retry)
+		// 這裡可以直接再丟回 channel
+		s.PushNotifyMessage(params)
 	}
 }
 

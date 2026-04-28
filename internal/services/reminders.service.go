@@ -33,7 +33,7 @@ func (s *ReminderService) CreateReminderFlow(ctx context.Context, req *types.Req
 		return
 	}
 	params := models.InsertReminderParams{
-		UserID:     req.UserID,
+		UserID:     s.TokenInfo.UserID,
 		Title:      req.Title,
 		Content:    req.Content,
 		Frequency:  req.Frequency,

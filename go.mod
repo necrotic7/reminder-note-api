@@ -3,16 +3,16 @@ module github.com/zivwu/reminder-note-api
 go 1.24.5
 
 require (
+	github.com/gin-contrib/cors v1.7.6
+	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/jinzhu/copier v0.4.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/viper v1.20.1
 	go.mongodb.org/mongo-driver/v2 v2.2.2
 )
 
 require (
-	github.com/gin-contrib/cors v1.7.6 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect

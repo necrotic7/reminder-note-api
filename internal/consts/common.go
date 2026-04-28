@@ -12,6 +12,7 @@ const (
 	PageSize        = 50
 	Timeout         = 5 * time.Second
 	Semaphore       = 10
+	MessageWorker   = 2
 	RetryInterval   = 3 * time.Second
 	TokenExpireTime = time.Hour * 2
 )
